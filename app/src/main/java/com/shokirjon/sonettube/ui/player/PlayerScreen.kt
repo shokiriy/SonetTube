@@ -28,6 +28,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -57,6 +58,7 @@ fun PlayerScreen(
     var isFullscreen by remember { mutableStateOf(false) }
     var controller by remember { mutableStateOf<YouTubePlayerController?>(null) }
     val video = state.video
+    var playerLoadError by remember(video?.videoId) { mutableStateOf(false) }
 
     BackHandler {
         if (isFullscreen) controller?.exitFullscreen() else onBack()
@@ -113,7 +115,20 @@ fun PlayerScreen(
                         else controllerCompat.show(WindowInsetsCompat.Type.systemBars())
                     },
                     onControllerReady = { controller = it },
+                    onLoadError = { playerLoadError = true },
                 )
+                if (playerLoadError) {
+                    Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
+                        Text(
+                            text = stringResource(R.string.player_load_error),
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        TextButton(onClick = { openInYouTube(context, video.videoId) }) {
+                            Text(stringResource(R.string.open_in_youtube))
+                        }
+                    }
+                }
                 Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)) {
                     Text(
                         text = video.title,

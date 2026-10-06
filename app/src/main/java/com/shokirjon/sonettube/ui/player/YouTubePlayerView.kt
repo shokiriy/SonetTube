@@ -4,32 +4,22 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.graphics.Color
-import android.net.Uri
+import android.util.Log
 import android.view.View
 import android.view.ViewGroup
-import android.webkit.JavascriptInterface
+import android.webkit.CookieManager
 import android.webkit.WebChromeClient
+import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
-import androidx.webkit.WebViewAssetLoader
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
-
-enum class PlaybackState {
-    UNKNOWN,
-    PLAYING,
-    PAUSED,
-    ENDED,
-}
 
 interface YouTubePlayerController {
     fun exitFullscreen()
@@ -40,49 +30,40 @@ fun YouTubePlayerView(
     videoId: String,
     modifier: Modifier = Modifier,
     onFullscreenChanged: (Boolean) -> Unit = {},
-    onPlaybackStateChanged: (PlaybackState) -> Unit = {},
+    onLoadError: () -> Unit = {},
     onControllerReady: (YouTubePlayerController) -> Unit = {},
 ) {
     val latestFullscreenCallback by rememberUpdatedState(onFullscreenChanged)
-    val latestPlaybackCallback by rememberUpdatedState(onPlaybackStateChanged)
+    val latestLoadErrorCallback by rememberUpdatedState(onLoadError)
     val latestControllerCallback by rememberUpdatedState(onControllerReady)
-    var container by remember { mutableStateOf<YouTubeWebViewContainer?>(null) }
-
     AndroidView(
         modifier = modifier,
         factory = { context ->
             YouTubeWebViewContainer(context).also { created ->
-                container = created
                 created.onFullscreenChanged = { latestFullscreenCallback(it) }
-                created.onPlaybackStateChanged = { latestPlaybackCallback(it) }
+                created.onLoadError = { latestLoadErrorCallback() }
                 created.loadVideo(videoId)
                 latestControllerCallback(created)
             }
         },
         update = { view ->
             view.onFullscreenChanged = { latestFullscreenCallback(it) }
-            view.onPlaybackStateChanged = { latestPlaybackCallback(it) }
+            view.onLoadError = { latestLoadErrorCallback() }
             view.loadVideo(videoId)
         },
+        onRelease = { it.release() },
     )
-
-    DisposableEffect(container) {
-        onDispose { container?.release() }
-    }
 }
 
-@SuppressLint("SetJavaScriptEnabled", "DEPRECATION")
+@SuppressLint("SetJavaScriptEnabled")
 private class YouTubeWebViewContainer(context: Context) : FrameLayout(context), YouTubePlayerController {
     private val webView = WebView(context)
-    private val assetLoader = WebViewAssetLoader.Builder()
-        .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(context))
-        .build()
     private var loadedVideoId: String? = null
     private var customView: View? = null
     private var customViewCallback: WebChromeClient.CustomViewCallback? = null
     private var released = false
     var onFullscreenChanged: (Boolean) -> Unit = {}
-    var onPlaybackStateChanged: (PlaybackState) -> Unit = {}
+    var onLoadError: () -> Unit = {}
 
     init {
         setBackgroundColor(Color.BLACK)
@@ -95,25 +76,24 @@ private class YouTubeWebViewContainer(context: Context) : FrameLayout(context), 
     }
 
     fun loadVideo(videoId: String) {
-        if (released || videoId.isBlank() || loadedVideoId == videoId) return
+        if (released || loadedVideoId == videoId) return
+        if (!VIDEO_ID_PATTERN.matches(videoId)) {
+            onLoadError()
+            return
+        }
         loadedVideoId = videoId
+        // YouTube requires an identifying Referer for Android WebView embeds.
         webView.loadUrl(
-            "https://appassets.androidplatform.net/assets/youtube_player.html?videoId=${Uri.encode(videoId)}",
+            "https://www.youtube.com/embed/$videoId?autoplay=0&controls=1&fs=1&playsinline=1",
+            mapOf("Referer" to "https://${context.packageName}/"),
         )
-    }
-
-    override fun onDetachedFromWindow() {
-        release()
-        super.onDetachedFromWindow()
     }
 
     fun release() {
         if (released) return
         released = true
-        if (webView.parent != null) {
-            (webView.parent as? ViewGroup)?.removeView(webView)
-        }
         hideCustomView()
+        (webView.parent as? ViewGroup)?.removeView(webView)
         webView.stopLoading()
         webView.loadUrl("about:blank")
         webView.clearHistory()
@@ -129,22 +109,35 @@ private class YouTubeWebViewContainer(context: Context) : FrameLayout(context), 
             allowFileAccess = false
             allowContentAccess = false
         }
-        webView.addJavascriptInterface(PlayerBridge(), "SonetTubeBridge")
-        android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true)
+        CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true)
         webView.webViewClient = object : WebViewClient() {
-            override fun shouldInterceptRequest(
+            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+                if (request.url.scheme != "https") return true
+                val host = request.url.host?.lowercase() ?: return true
+                return host != "youtube.com" && !host.endsWith(".youtube.com") &&
+                    host != "googlevideo.com" && !host.endsWith(".googlevideo.com")
+            }
+
+            override fun onReceivedError(
                 view: WebView,
                 request: WebResourceRequest,
-            ): android.webkit.WebResourceResponse? = assetLoader.shouldInterceptRequest(request.url)
+                error: WebResourceError,
+            ) {
+                if (request.isForMainFrame) {
+                    Log.w(TAG, "YouTube player load error: ${error.errorCode}")
+                    onLoadError()
+                }
+            }
 
-            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-                val host = request.url.host?.lowercase() ?: return true
-                val isTrustedHost = host == "appassets.androidplatform.net" ||
-                    host == "youtube.com" || host.endsWith(".youtube.com") ||
-                    host == "youtube-nocookie.com" || host.endsWith(".youtube-nocookie.com") ||
-                    host == "googlevideo.com" || host.endsWith(".googlevideo.com") ||
-                    host == "ytimg.com" || host.endsWith(".ytimg.com")
-                return !isTrustedHost
+            override fun onReceivedHttpError(
+                view: WebView,
+                request: WebResourceRequest,
+                response: WebResourceResponse,
+            ) {
+                if (request.isForMainFrame) {
+                    Log.w(TAG, "YouTube player HTTP error: ${response.statusCode}")
+                    onLoadError()
+                }
             }
         }
         webView.webChromeClient = object : WebChromeClient() {
@@ -153,10 +146,14 @@ private class YouTubeWebViewContainer(context: Context) : FrameLayout(context), 
                     callback.onCustomViewHidden()
                     return
                 }
+                val decor = context.findActivity()?.window?.decorView as? ViewGroup
+                if (decor == null) {
+                    callback.onCustomViewHidden()
+                    return
+                }
                 customView = view
                 customViewCallback = callback
-                val decor = (context.findActivity()?.window?.decorView as? ViewGroup)
-                decor?.addView(
+                decor.addView(
                     view,
                     ViewGroup.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
@@ -183,17 +180,9 @@ private class YouTubeWebViewContainer(context: Context) : FrameLayout(context), 
         onFullscreenChanged(false)
     }
 
-    private inner class PlayerBridge {
-        @JavascriptInterface
-        fun onPlayerState(state: String) {
-            val playbackState = when (state) {
-                "playing" -> PlaybackState.PLAYING
-                "paused" -> PlaybackState.PAUSED
-                "ended" -> PlaybackState.ENDED
-                else -> PlaybackState.UNKNOWN
-            }
-            post { onPlaybackStateChanged(playbackState) }
-        }
+    private companion object {
+        const val TAG = "SonetTubePlayer"
+        val VIDEO_ID_PATTERN = Regex("^[A-Za-z0-9_-]{11}$")
     }
 }
 

@@ -77,7 +77,7 @@ Compose UI → ViewModel → Repository → Retrofit / Room
 
 Remote API DTOs are mapped to the `Video` domain model before reaching UI code. Room stores `FavoriteVideoEntity` and `RecentVideoEntity`. Navigation passes only a video ID; metadata is loaded from local history/favorites after a video is opened.
 
-The WebView player loads only the bundled player page and the YouTube content required by the official IFrame API. JavaScript is enabled because the IFrame API requires it; file-URL cross-origin access and generic external navigation are restricted.
+The WebView player loads the official YouTube embed URL with an app-identifying `Referer` request header. JavaScript is enabled because YouTube playback requires it; file access and generic external navigation are restricted.
 
 ## Project structure
 

@@ -26,8 +26,8 @@ android {
         applicationId = "com.shokirjon.sonettube"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "1.1"
+        versionCode = 3
+        versionName = "1.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -89,7 +89,6 @@ dependencies {
     implementation("com.google.code.gson:gson:2.11.0")
 
     implementation("io.coil-kt:coil-compose:2.7.0")
-    implementation("androidx.webkit:webkit:1.12.1")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
