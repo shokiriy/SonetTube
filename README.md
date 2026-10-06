@@ -61,6 +61,12 @@ From a terminal:
 
 On Windows PowerShell, use `./gradlew.bat test` and `./gradlew.bat assembleDebug`.
 
+## Debug APK
+
+A debug APK built from the `main` branch is available at [`artifacts/SonetTube-debug.apk`](https://github.com/shokiriy/SonetTube/raw/refs/heads/main/artifacts/SonetTube-debug.apk). Enable installation from the APK source on your Android device if prompted.
+
+This is a development build. Because the YouTube Data API key is supplied at build time to a client application, restrict the key to **YouTube Data API v3** in Google Cloud Console and do not use this debug APK as a production distribution.
+
 ## Architecture
 
 The app uses a small manual dependency container created by `SonetTubeApp`:
