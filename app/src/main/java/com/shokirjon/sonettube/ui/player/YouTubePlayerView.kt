@@ -13,6 +13,7 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
+import androidx.webkit.WebViewAssetLoader
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -73,6 +74,9 @@ fun YouTubePlayerView(
 @SuppressLint("SetJavaScriptEnabled", "DEPRECATION")
 private class YouTubeWebViewContainer(context: Context) : FrameLayout(context), YouTubePlayerController {
     private val webView = WebView(context)
+    private val assetLoader = WebViewAssetLoader.Builder()
+        .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(context))
+        .build()
     private var loadedVideoId: String? = null
     private var customView: View? = null
     private var customViewCallback: WebChromeClient.CustomViewCallback? = null
@@ -93,7 +97,9 @@ private class YouTubeWebViewContainer(context: Context) : FrameLayout(context), 
     fun loadVideo(videoId: String) {
         if (released || videoId.isBlank() || loadedVideoId == videoId) return
         loadedVideoId = videoId
-        webView.loadUrl("file:///android_asset/youtube_player.html?videoId=${Uri.encode(videoId)}")
+        webView.loadUrl(
+            "https://appassets.androidplatform.net/assets/youtube_player.html?videoId=${Uri.encode(videoId)}",
+        )
     }
 
     override fun onDetachedFromWindow() {
@@ -120,17 +126,25 @@ private class YouTubeWebViewContainer(context: Context) : FrameLayout(context), 
             javaScriptEnabled = true
             domStorageEnabled = true
             mediaPlaybackRequiresUserGesture = true
-            allowFileAccess = true
+            allowFileAccess = false
             allowContentAccess = false
-            allowFileAccessFromFileURLs = false
-            allowUniversalAccessFromFileURLs = false
         }
         webView.addJavascriptInterface(PlayerBridge(), "SonetTubeBridge")
+        android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true)
         webView.webViewClient = object : WebViewClient() {
+            override fun shouldInterceptRequest(
+                view: WebView,
+                request: WebResourceRequest,
+            ): android.webkit.WebResourceResponse? = assetLoader.shouldInterceptRequest(request.url)
+
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val host = request.url.host?.lowercase() ?: return true
-                return host != "youtube.com" && !host.endsWith(".youtube.com") &&
-                    host != "googlevideo.com" && !host.endsWith(".googlevideo.com")
+                val isTrustedHost = host == "appassets.androidplatform.net" ||
+                    host == "youtube.com" || host.endsWith(".youtube.com") ||
+                    host == "youtube-nocookie.com" || host.endsWith(".youtube-nocookie.com") ||
+                    host == "googlevideo.com" || host.endsWith(".googlevideo.com") ||
+                    host == "ytimg.com" || host.endsWith(".ytimg.com")
+                return !isTrustedHost
             }
         }
         webView.webChromeClient = object : WebChromeClient() {
