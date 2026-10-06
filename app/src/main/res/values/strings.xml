@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SonetTube</string>
+    <string name="home">Home</string>
+    <string name="favorites">Favorites</string>
+    <string name="history">History</string>
+    <string name="search_youtube">Search YouTube</string>
+    <string name="search">Search</string>
+    <string name="open_from_url">Open from URL</string>
+    <string name="paste_youtube_url">Paste a YouTube URL or video ID</string>
+    <string name="open">Open</string>
+    <string name="cancel">Cancel</string>
+    <string name="welcome_title">Find something to watch</string>
+    <string name="welcome_message">Search YouTube or open a video directly from its URL.</string>
+    <string name="no_results">No videos found</string>
+    <string name="no_results_message">Try a different search phrase.</string>
+    <string name="no_favorites">No favorites yet</string>
+    <string name="no_favorites_message">Videos you save will appear here.</string>
+    <string name="no_history">No watch history yet</string>
+    <string name="no_history_message">Videos you watch will appear here.</string>
+    <string name="clear_history">Clear history</string>
+    <string name="remove">Remove</string>
+    <string name="favorite">Favorite</string>
+    <string name="unfavorite">Remove from favorites</string>
+    <string name="share">Share</string>
+    <string name="open_in_youtube">Open in YouTube</string>
+    <string name="video_unavailable">Video unavailable</string>
+    <string name="generic_error">Something went wrong. Please try again.</string>
+    <string name="api_key_missing">YouTube API key is not configured. Add YOUTUBE_API_KEY to local.properties.</string>
+    <string name="invalid_url">That does not look like a valid YouTube URL or video ID.</string>
+    <string name="empty_query">Enter a search phrase first.</string>
+    <string name="clear_history_confirmation">Remove all watched videos from history?</string>
+    <string name="yes_clear">Clear</string>
+    <string name="published_date">Published %1$s</string>
+</resources>

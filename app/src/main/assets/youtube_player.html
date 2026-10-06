@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <style>
+        html, body, #player { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }
+    </style>
+</head>
+<body>
+<div id="player"></div>
+<script>
+    const videoId = new URLSearchParams(window.location.search).get('videoId');
+    let player;
+    function notify(state) {
+        if (window.SonetTubeBridge) window.SonetTubeBridge.onPlayerState(state);
+    }
+    function onYouTubeIframeAPIReady() {
+        player = new YT.Player('player', {
+            width: '100%',
+            height: '100%',
+            videoId: videoId,
+            playerVars: {
+                autoplay: 0,
+                controls: 1,
+                fs: 1,
+                playsinline: 1,
+                rel: 0,
+                modestbranding: 1
+            },
+            events: {
+                onStateChange: function(event) {
+                    const state = {
+                        1: 'playing',
+                        2: 'paused',
+                        0: 'ended'
+                    }[event.data] || 'unknown';
+                    notify(state);
+                }
+            }
+        });
+    }
+</script>
+<script src="https://www.youtube.com/iframe_api"></script>
+</body>
+</html>

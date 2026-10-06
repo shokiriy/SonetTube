@@ -1,0 +1,23 @@
+# Gradle
+.gradle/
+build/
+*/build/
+
+# Android Studio
+.idea/
+*.iml
+local.properties
+
+# Signing and generated artifacts
+*.jks
+*.keystore
+captures/
+output-metadata.json
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+*.swp
+
+# Local secrets
+secrets.properties
