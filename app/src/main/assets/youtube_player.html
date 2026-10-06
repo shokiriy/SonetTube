@@ -7,28 +7,28 @@
     </style>
 </head>
 <body>
-<div id="player"></div>
+<div id="player-container"></div>
 <script>
     const videoId = new URLSearchParams(window.location.search).get('videoId');
     let player;
+    const iframe = document.createElement('iframe');
+    iframe.id = 'player';
+    iframe.title = 'YouTube video player';
+    iframe.width = '100%';
+    iframe.height = '100%';
+    iframe.frameBorder = '0';
+    iframe.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+    iframe.allowFullscreen = true;
+    iframe.src = 'https://www.youtube.com/embed/' + encodeURIComponent(videoId || '') +
+        '?enablejsapi=1&origin=https%3A%2F%2Fappassets.androidplatform.net' +
+        '&autoplay=0&controls=1&fs=1&playsinline=1&rel=0';
+    document.getElementById('player-container').appendChild(iframe);
+
     function notify(state) {
         if (window.SonetTubeBridge) window.SonetTubeBridge.onPlayerState(state);
     }
     function onYouTubeIframeAPIReady() {
         player = new YT.Player('player', {
-            width: '100%',
-            height: '100%',
-            videoId: videoId,
-            playerVars: {
-                enablejsapi: 1,
-                autoplay: 0,
-                controls: 1,
-                fs: 1,
-                origin: 'https://appassets.androidplatform.net',
-                playsinline: 1,
-                rel: 0,
-                modestbranding: 1
-            },
             events: {
                 onStateChange: function(event) {
                     const state = {
