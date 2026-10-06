@@ -2,6 +2,7 @@
 .gradle/
 build/
 */build/
+outputs/
 
 # Android Studio
 .idea/
