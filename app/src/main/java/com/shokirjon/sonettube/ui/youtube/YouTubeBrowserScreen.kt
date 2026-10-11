@@ -31,6 +31,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -41,6 +42,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.zIndex
 
 private const val YOUTUBE_HOME_URL = "https://m.youtube.com"
@@ -56,6 +60,32 @@ fun YouTubeBrowserScreen(modifier: Modifier = Modifier) {
     var progress by remember { mutableIntStateOf(0) }
     var customView by remember { mutableStateOf<View?>(null) }
     var customViewCallback by remember { mutableStateOf<WebChromeClient.CustomViewCallback?>(null) }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner, webView) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_PAUSE -> webView?.let { view ->
+                    view.evaluateJavascript(
+                        "document.querySelectorAll('video').forEach(video => video.pause())",
+                        null,
+                    )
+                    view.onPause()
+                    view.pauseTimers()
+                }
+
+                Lifecycle.Event.ON_RESUME -> webView?.let { view ->
+                    view.resumeTimers()
+                    view.onResume()
+                }
+
+                else -> Unit
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     fun closeFullscreen(notifyWebView: Boolean) {
         val view = customView
