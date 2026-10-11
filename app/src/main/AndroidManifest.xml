@@ -16,10 +16,6 @@
         android:roundIcon="@drawable/ic_sonettube"
         android:supportsRtl="true"
         android:theme="@style/Theme.SonetTube">
-        <meta-data
-            android:name="android.max_aspect"
-            android:value="4.0" />
-
         <activity
             android:name=".app.MainActivity"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|density|uiMode|layoutDirection|locale"
@@ -29,7 +25,6 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
-                <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.CAR_LAUNCHER" />
             </intent-filter>
             <layout
@@ -39,8 +34,8 @@
                 android:defaultWidth="800dp"
                 android:defaultHeight="480dp" />
             <meta-data
-                android:name="android.max_aspect"
-                android:value="5.0" />
+                android:name="distractionOptimized"
+                android:value="true" />
         </activity>
     </application>
 
