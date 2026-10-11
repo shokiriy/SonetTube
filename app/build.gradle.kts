@@ -35,6 +35,11 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Keep the personal test build installable beside an existing SonetTube
+            // release/debug build, even if it was signed with a different key.
+            applicationIdSuffix = ".test"
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
