@@ -1,6 +1,9 @@
 package com.shokirjon.sonettube.ui.youtube
 
 import android.annotation.SuppressLint
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
 import android.net.Uri
 import android.view.View
@@ -17,11 +20,15 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,9 +42,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.zIndex
-import android.content.Context
-import android.content.ContextWrapper
-import android.app.Activity
 
 private const val YOUTUBE_HOME_URL = "https://m.youtube.com"
 
@@ -74,7 +78,11 @@ fun YouTubeBrowserScreen(modifier: Modifier = Modifier) {
         }
     }
 
-    Box(modifier = modifier.fillMaxSize()) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .windowInsetsPadding(WindowInsets.safeDrawing),
+    ) {
         AndroidView(
             modifier = Modifier.fillMaxSize(),
             factory = { webContext ->
@@ -115,7 +123,11 @@ fun YouTubeBrowserScreen(modifier: Modifier = Modifier) {
                             return true
                         }
 
-                        override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
+                        override fun onPageStarted(
+                            view: WebView?,
+                            url: String?,
+                            favicon: android.graphics.Bitmap?,
+                        ) {
                             loadError = false
                             progress = 0
                         }
@@ -207,26 +219,31 @@ fun YouTubeBrowserScreen(modifier: Modifier = Modifier) {
         }
 
         if (loadError) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                color = MaterialTheme.colorScheme.surface,
             ) {
-                Text(
-                    text = "YouTube yuklanmadi. Internet aloqasini tekshirib, qayta urinib ko‘ring.",
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-                Button(
-                    onClick = {
-                        loadError = false
-                        progress = 0
-                        webView?.reload()
-                    },
-                    modifier = Modifier.padding(top = 12.dp),
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
                 ) {
-                    Text("Qayta yuklash")
+                    Text(
+                        text = "YouTube yuklanmadi. Internet aloqasini tekshirib, qayta urinib ko‘ring.",
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                    Button(
+                        onClick = {
+                            loadError = false
+                            progress = 0
+                            webView?.reload()
+                        },
+                        modifier = Modifier.padding(top = 12.dp),
+                    ) {
+                        Text("Qayta yuklash")
+                    }
                 }
             }
         }
@@ -247,6 +264,7 @@ private fun openExternalUrl(context: Context, uri: Uri) {
 
 private val TRUSTED_WEB_HOSTS = setOf(
     "youtube.com",
+    "youtu.be",
     "youtube-nocookie.com",
     "google.com",
     "googlevideo.com",
