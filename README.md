@@ -1,111 +1,51 @@
 # SonetTube
 
-SonetTube is a small, modern Android application for searching YouTube, watching videos in-app, saving favorites, and keeping a local watch history. It is intentionally a phone-first learning project. Version 1 does not implement Android Auto, screen mirroring, driving-mode workarounds, downloading, ad blocking, or background-audio bypasses.
+SonetTube opens YouTube's official mobile website in an Android WebView. The same responsive page fills the phone or a wide head-unit window.
 
-## Features
+## What it does
 
-- YouTube Data API v3 search with thumbnails, channel names, and publication dates
-- YouTube IFrame Player API hosted in a carefully configured WebView
-- Portrait playback and fullscreen landscape playback
-- Open a video from a YouTube watch URL, short URL, Shorts URL, embed URL, or raw video ID
-- Favorites and a persistent, newest-first watch history capped at 100 entries
-- Share a video URL or open it in the official YouTube app/browser
-- Light and dark Material 3 themes
-- Clear error states for missing API keys, invalid keys/quota errors, network failures, and empty searches
+- Renders YouTube's site in Android System WebView
+- Keeps JavaScript, DOM storage, and cookies enabled for normal site behavior and session state
+- Supports YouTube's HTML5 player and fullscreen mode
+- Requires a user gesture before media playback starts
+- Pauses page video when the activity goes into the background
+- Sends links outside YouTube and Google's supporting domains to the device browser
+- Uses Android Back to navigate WebView history
 
-## Technology stack
+The app does not download or extract media, block ads, or modify DRM behavior.
 
-- Kotlin and Gradle Kotlin DSL
-- Jetpack Compose and Material 3
-- Navigation Compose, ViewModel, Coroutines, and StateFlow
-- Retrofit, OkHttp, and Gson
-- Room for favorites and watch history
-- Coil for thumbnail loading
-- Android WebView with the official YouTube IFrame Player API
-- Manual application dependency wiring; no Hilt/Koin is required
+## Android Auto
+
+The launcher activity has an AABrowser-style `CAR_LAUNCHER` entry and a resizable 800×480 head-unit window. For sideloaded builds, Android Auto's Developer settings must allow unknown sources. Android Auto version and vehicle compatibility can affect whether the app appears.
+
+This is a parked-use build. SonetTube does not declare itself distraction-optimized; playback is paused when Android pauses the activity. The manifest uses Android Auto's current parked-app launcher classification for this sideload route. This is not a Play Store approval or an official YouTube Android Auto app.
 
 ## Requirements
 
 - Android Studio with Android SDK Platform 35
 - JDK 17
-- A YouTube Data API v3 key for search
-- Android phone or emulator running API 26 or newer
+- Android phone running API 26 or newer
+- Android Auto on the phone and a compatible head unit for car projection
+- Internet access and an up-to-date Android System WebView
 
-## API key setup
+The active YouTube website experience does not require a YouTube Data API key. The original API search, Room, and IFrame-player source modules remain in the repository but are not wired into the current app entry point.
 
-The API key is never hardcoded. `local.properties` is ignored by Git and is read only at build time into `BuildConfig.YOUTUBE_API_KEY`.
+## Build and install
 
-1. Open the [Google Cloud Console](https://console.cloud.google.com/).
-2. Create or select a project.
-3. Enable **YouTube Data API v3** under APIs & Services → Library.
-4. Open APIs & Services → Credentials.
-5. Create an API key. Restrict it where appropriate for your development setup.
-6. In the project root, create or edit `local.properties` and add:
-
-   ```properties
-   YOUTUBE_API_KEY=YOUR_API_KEY
-   ```
-
-   `local.properties.example` is included as a template. If the key is missing, the app still compiles and shows a clear setup message when a search is attempted.
-
-## Open and run
-
-Open the repository directory in Android Studio, allow Gradle to sync, configure the API key, and run the `app` configuration on a device or emulator.
-
-From a terminal:
+Open the repository in Android Studio and run the `app` configuration. To build from a terminal:
 
 ```bash
-./gradlew test
-./gradlew assembleDebug
+./gradlew testDebugUnitTest assembleDebug
 ```
 
-On Windows PowerShell, use `./gradlew.bat test` and `./gradlew.bat assembleDebug`.
+The debug APK is produced at `app/build/outputs/apk/debug/app-debug.apk`. It is signed with the debug key and can be installed on your phone for testing.
 
-## Debug APK
+To allow a sideloaded app in Android Auto, open Android Auto settings, tap the version entry repeatedly to enable Developer settings, then enable **Unknown sources**. Menu wording can vary by Android Auto version.
 
-A debug APK built from the `main` branch is available at [`artifacts/SonetTube-debug.apk`](https://github.com/shokiriy/SonetTube/raw/refs/heads/main/artifacts/SonetTube-debug.apk). Enable installation from the APK source on your Android device if prompted.
+## WebView behavior
 
-This is a development build. Because the YouTube Data API key is supplied at build time to a client application, restrict the key to **YouTube Data API v3** in Google Cloud Console and do not use this debug APK as a production distribution.
+The app loads the official YouTube mobile site and leaves its interface and playback behavior under YouTube's control. The WebView allows YouTube and supporting Google domains for site navigation and sign-in flows; other HTTP(S) links open in the default browser. File and content access are disabled, and mixed-content loading is blocked.
 
-## Architecture
+## Legacy source
 
-The app uses a small manual dependency container created by `SonetTubeApp`:
-
-```text
-Compose UI → ViewModel → Repository → Retrofit / Room
-```
-
-Remote API DTOs are mapped to the `Video` domain model before reaching UI code. Room stores `FavoriteVideoEntity` and `RecentVideoEntity`. Navigation passes only a video ID; metadata is loaded from local history/favorites after a video is opened.
-
-The WebView player loads the official YouTube embed URL with an app-identifying `Referer` request header. JavaScript is enabled because YouTube playback requires it; file access and generic external navigation are restricted.
-
-## Project structure
-
-```text
-app/src/main/java/com/shokirjon/sonettube/
-├── app/          Application, Activity, and dependency container
-├── data/         Retrofit DTOs/API and Room database/DAOs/entities
-├── model/        Domain models
-├── navigation/  Routes and Navigation Compose graph
-├── repository/  Remote and local data access
-├── ui/           Compose screens, ViewModels, player, components, theme
-└── util/         Reusable YouTube URL parser
-```
-
-## Tests
-
-The project includes meaningful unit tests for YouTube URL parsing and remote DTO-to-domain mapping. Run all tests with:
-
-```bash
-./gradlew test
-```
-
-## Future plans
-
-- Playlists
-- Improved player-state reporting
-- Optional Google account support
-- Tablet-optimized UI
-- Android Auto integration only if official platform support becomes available and suitable
-
-The current version does **not** bypass Android Auto restrictions and does not implement Android Automotive OS, screen mirroring, AAAD, CarStream, Fermata Auto integration, DRM bypass, downloading, ad blocking, or background-audio workarounds.
+The first SonetTube version included YouTube Data API search, Room-backed favorites and history, and an IFrame player. Those source files and their unit tests remain for now, but the current launcher screen opens the full YouTube website.
